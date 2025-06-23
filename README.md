@@ -1,18 +1,16 @@
-# 🛡️ Differentially Private Medical Charges Classifier
+# 🛡️ Differentially Private Income Classifier (Adult Dataset)
 
-&#x20;&#x20;
-
-This repository contains a PyTorch-based training pipeline that uses **differential privacy (DP)** via Opacus to train a model on a medical dataset, classifying whether an individual's medical charges are high or not. It includes options to continue training from a saved checkpoint, visualize performance metrics, compute the confusion matrix for evaluation, and supports custom datasets.
+This repository contains a PyTorch-based training pipeline that uses **differential privacy (DP)** via Opacus to train a neural network classifier on the [Adult Income Dataset](https://www.kaggle.com/datasets/uciml/adult-census-income). It includes training, checkpointing, evaluation with confusion matrix, and performance visualizations. The goal is to classify whether an individual's income is **greater than \$50K**.
 
 ---
 
 ## 📂 Project Structure
 
 ```
-📁 dp-medical-dp-model/
+📁 dp-income-dp-model/
 ├── dp_model_checkpoint.pth  # Saved model state (generated after training)
-├── sample_medical_data.csv  # Input dataset
-├── train_dp_model.ipynb     # Jupyter Notebook with full training code
+├── adult.csv                # Input dataset from Kaggle
+├── train_dp_model.ipynb     # Full training code with DP
 └── README.md                # You're here!
 ```
 
@@ -20,10 +18,10 @@ This repository contains a PyTorch-based training pipeline that uses **different
 
 ## 🧠 What the Model Does
 
-- 📥 **Input**: Patient info like Age, Sex, BMI, Children, Smoker status, Region.
-- 📤 **Output**: Classifies whether medical charges are **above ₹15,000 (label=1)** or not (label=0).
-- ⚙️ Fully connected neural network with 3 layers.
-- 🔐 Training is **differentially private** using [Opacus](https://opacus.ai/).
+- 📥 **Input**: Features like Age, Workclass, Education, Sex, Capital-gain, etc.
+- 📤 **Output**: Predicts if income is **>50K (label=1)** or **<=50K (label=0)**.
+- ⚙️ Neural network with 3 hidden layers.
+- 🔐 Uses [Opacus](https://opacus.ai/) to enable training with differential privacy.
 
 ---
 
@@ -37,41 +35,83 @@ This repository contains a PyTorch-based training pipeline that uses **different
 
 ## 🛡️ What is Differential Privacy?
 
-Differential Privacy ensures that the model **does not memorize or leak individual data points**.
+Differential Privacy (DP) is a technique that adds noise during training to ensure models do **not memorize or leak individual user data**.
 
-> 🔐 In this project, Opacus adds noise to gradients during training so that the final model is safe to release.
+### Why DP?
 
-### Why DP Matters:
+- 🧬 Ensures safety of **sensitive data**.
+- ✅ Helps comply with privacy regulations (GDPR, HIPAA).
+- 🤖 Enables safe model sharing.
 
-- Prevents re-identification attacks.
-- Ensures regulatory compliance (HIPAA, GDPR).
-- Useful when training on **sensitive medical data**.
+### Key DP Concepts
 
-### Key Concepts:
+- **Epsilon (ε)**: Privacy budget — smaller means stronger privacy. Typically, ε < 5 is a good goal.
+- **Delta (𝛿)**: Failure probability (typically set to 1e-5).
+- **Max Grad Norm**: Used to clip gradients before noise is added. Lowering this value increases privacy.
+- **Privacy Engine**: Automatically clips gradients and injects noise to ensure DP constraints are met. It tracks the evolving ε during training.
 
-- **Epsilon (ε)**: Privacy budget. Lower = better privacy, but may reduce accuracy.
-- **Delta (𝛿)**: Probability of privacy failure. Typically `1e-5`.
-- **Max Grad Norm**: Controls gradient clipping for DP. Lower = stronger privacy.
+---
+
+## 🔑 Key Concepts
+
+### Neural Network Architecture
+
+- **Type**: Fully Connected Feedforward Neural Network (FCNN)
+- **Layers**:
+  - `fc1`: Linear layer with 128 neurons and ReLU
+  - `fc2`: Linear layer with 64 neurons and ReLU
+  - `fc3`: Output layer with 2 units for binary classification (income ≤50K or >50K)
+- **Activation**: ReLU (for non-linearity)
+
+### Learning Rate
+
+- **Value**: `5e-4` (0.0005)
+- A small learning rate ensures **stable** and **controlled updates**.
+- Decreasing learning rate slows down learning but helps the model settle into a better local minimum.
+
+### Epochs
+
+- **Value**: `25` by default
+- An epoch is one full pass over the training dataset.
+- More epochs = better training (to a point) but may lead to overfitting or higher privacy cost (ε).
+
+### Privacy Engine
+
+- Comes from **Opacus**.
+- Automatically:
+  - Clips gradients to limit sensitivity
+  - Adds Gaussian noise
+  - Tracks ε (privacy cost) across epochs
+- Works transparently with PyTorch models
 
 ---
 
 ## 🧪 Dataset Format
 
-You must have a `sample_medical_data.csv` file in this format:
+Use the [Adult Dataset](https://www.kaggle.com/datasets/uciml/adult-census-income) from Kaggle and ensure it's named `adult.csv`.
 
-| age | sex  | bmi | children | smoker | region    | charges |
-| --- | ---- | --- | -------- | ------ | --------- | ------- |
-| 23  | male | 32  | 0        | yes    | southeast | 16884.9 |
+| age | workclass | education | marital-status | occupation | race | sex | capital-gain | capital-loss | hours-per-week | native-country | income |
+| --- | --------- | --------- | -------------- | ---------- | ---- | --- | ------------ | ------------ | -------------- | -------------- | ------ |
 
-> The code auto-encodes categorical values and creates a binary label:
+### Preprocessing Steps
 
 ```python
-# Optional preprocessing for binary classification
-from sklearn.preprocessing import StandardScaler
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-df['label'] = (df['charges'] > 15000).astype(int)
-X = df.drop(columns=['charges', 'label'])
-y = df['label'].values
+df = pd.read_csv("adult.csv")
+df.drop(columns=['fnlwgt'], inplace=True)
+df.replace('?', np.nan, inplace=True)
+df.dropna(inplace=True)
+
+for col in df.columns:
+    if df[col].dtype == 'object':
+        df[col] = LabelEncoder().fit_transform(df[col])
+
+X = df.drop('income', axis=1).values.astype(np.float32)
+y = df['income'].values.astype(int)
+
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 ```
@@ -83,75 +123,72 @@ X = scaler.fit_transform(X)
 ### Step 1: Upload Your Dataset
 
 ```python
-csv_path = "/content/your_medical_data.csv"
+csv_path = "/content/adult.csv"
 ```
 
-### Step 2: Choose Training Mode
+### Step 2: Choose Mode
 
 ```python
-mode = "new"       # Start from scratch
-mode = "continue"  # Load saved model and continue training
+mode = "new"       # Start training from scratch
+mode = "continue"  # Resume from last checkpoint
 ```
 
-### Step 3: Run Code End-to-End
+### Step 3: Run Full Code
 
-Includes: Data loading, preprocessing, training, saving, and evaluation.
+This will do:
+
+- Data preprocessing
+- Neural network training
+- Differential privacy enforcement
+- Evaluation with confusion matrix
 
 ---
 
 ## 📊 Output Metrics
 
-- 📉 Training Loss
-- ✅ Training Accuracy
-- 🔐 Privacy Budget ε per Epoch
-- 📈 Confusion Matrix (for evaluation)
-
-> 📌 You can plug in **your own dataset** by matching the column format above.
-
----
-
-## 🧠 Tips to Improve Accuracy ✅
-
-| Objective                | What to Change                    | Why                                     |
-| ------------------------ | --------------------------------- | --------------------------------------- |
-| Improve Accuracy         | Increase `epochs`                 | Model learns patterns longer            |
-|                          | Use smaller `learning rate`       | Finer weight updates                    |
-|                          | Apply `StandardScaler`            | Feature normalization helps convergence |
-| Reduce Loss              | Tune architecture, LR, batch size | Better optimization setup               |
-| Reduce Epsilon (Privacy) | Increase `batch_size`             | Less noise per example                  |
-|                          | Decrease `max_grad_norm`          | Stronger clipping = better privacy      |
-|                          | Lower `target_epsilon`            | Tighter DP constraint                   |
-
----
-
-## 🔍 Confusion Matrix Example
+- 📉 Loss per epoch
+- ✅ Accuracy per epoch
+- 🔐 Privacy Budget ε per epoch
+- 📈 Confusion Matrix
 
 ```python
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 cm = confusion_matrix(y_true, y_pred)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0, 1])
 disp.plot(cmap='Blues')
-plt.title("🧠 Confusion Matrix on Test Set")
-plt.grid(False)
-plt.show()
 ```
 
-|          | Predicted 0 | Predicted 1 |
-| -------- | ----------- | ----------- |
-| Actual 0 | TN          | FP          |
-| Actual 1 | FN          | TP          |
+---
+
+## 📌 Tips to Improve Results
+
+| Objective          | What to Tune                   | Why                                            |
+| ------------------ | ------------------------------ | ---------------------------------------------- |
+| Improve Accuracy   | Increase `epochs`              | More learning cycles                           |
+|                    | Lower `learning rate`          | More stable updates and smaller learning steps |
+|                    | Apply `StandardScaler`         | Normalizes feature scale                       |
+| Reduce Loss        | Tune architecture & batch size | Better optimization stability                  |
+| Reduce Epsilon (ε) | Increase `batch_size`          | Less noise per sample                          |
+|                    | Lower `max_grad_norm`          | Stronger clipping, stronger privacy            |
+
+---
+
+## 🧠 Confusion Matrix Output
+
+|             | Predicted ≤50K | Predicted >50K |
+| ----------- | -------------- | -------------- |
+| Actual ≤50K | TN             | FP             |
+| Actual >50K | FN             | TP             |
 
 ---
 
 ## 📌 Output Section
 
-> Add screenshots of your **training plots** and **confusion matrix** here!
+👉 You can optionally include screenshots here of your training plots, confusion matrix, or ε chart.
 
 ---
 
 ## 🧰 Requirements
-
-Install dependencies:
 
 ```bash
 pip install opacus pandas scikit-learn matplotlib
@@ -161,21 +198,27 @@ pip install opacus pandas scikit-learn matplotlib
 
 ## 🙌 Contributions Welcome!
 
-Feel free to:
-
 - Fork the repo
-- Plug in your own dataset
-- Submit pull requests or issues
+- Use your own Kaggle datasets
+- Submit issues or improvements
 
-Let's build safer AI together 🤝
+Let’s build private AI responsibly 💡🔐
+
+My goal in this was to preserve data and privacy at the same time and was ok with accuracy level. But i encourage y'all to experiment i have kept some of my original code i had during my testing face with another dataset you can also use that.
+
+
+
+i will soon update the model to read MINST datasets so stay tuned.
+
+
 
 ---
 
 ## 📜 License
 
-MIT License.
+MIT License
 
 ---
 
-> For any queries, feel free to contact or open an issue. Happy learning & coding with privacy! 🔐🚀
+> Feel free to reach out for improvements, fixes, or suggestions!
 
