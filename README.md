@@ -137,6 +137,8 @@ pip install opacus pandas scikit-learn matplotlib
 
 Download the [Adult Dataset from Kaggle](https://www.kaggle.com/datasets/uciml/adult-census-income) and place `adult.csv` in the repo directory.
 
+Also this is a sample dataset I used [sample_medical_data.csv](https://github.com/user-attachments/files/20873291/sample_medical_data.csv)
+
 ### Step 4: Modify Mode if Needed
 
 In the script:
@@ -197,7 +199,10 @@ disp.plot(cmap='Blues')
 
 ## 📌 Output Section
 
-👉 You can optionally include screenshots here of your training plots, confusion matrix, or ε chart.
+![image](https://github.com/user-attachments/assets/8d3e39a8-218e-4bab-aeda-f471bdced3c0)
+![image](https://github.com/user-attachments/assets/1bdf177f-f881-401b-99a5-b336193753cb)
+
+
 
 ---
 
