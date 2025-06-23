@@ -120,27 +120,40 @@ X = scaler.fit_transform(X)
 
 ## 🚀 How to Run
 
-### Step 1: Upload Your Dataset
+### Step 1: Clone the Repository
 
-```python
-csv_path = "/content/adult.csv"
+```bash
+git clone https://github.com/your-username/dp-income-dp-model.git
+cd dp-income-dp-model
 ```
 
-### Step 2: Choose Mode
+### Step 2: Install Dependencies
+
+```bash
+pip install opacus pandas scikit-learn matplotlib
+```
+
+### Step 3: Add the Dataset
+
+Download the [Adult Dataset from Kaggle](https://www.kaggle.com/datasets/uciml/adult-census-income) and place `adult.csv` in the repo directory.
+
+### Step 4: Modify Mode if Needed
+
+In the script:
 
 ```python
 mode = "new"       # Start training from scratch
 mode = "continue"  # Resume from last checkpoint
 ```
 
-### Step 3: Run Full Code
+### Step 5: Run the Code
 
-This will do:
+Use `train_dp_model.ipynb` to execute the full pipeline:
 
-- Data preprocessing
-- Neural network training
-- Differential privacy enforcement
-- Evaluation with confusion matrix
+- Preprocessing
+- Model training
+- DP integration
+- Evaluation
 
 ---
 
@@ -204,13 +217,9 @@ pip install opacus pandas scikit-learn matplotlib
 
 Let’s build private AI responsibly 💡🔐
 
-My goal in this was to preserve data and privacy at the same time and was ok with accuracy level. But i encourage y'all to experiment i have kept some of my original code i had during my testing face with another dataset you can also use that.
+My goal in this was to preserve data and privacy at the same time and was ok with accuracy level. But I encourage y'all to experiment — I have kept some of my original code I had during my testing phase with another dataset. You can also use that.
 
-
-
-i will soon update the model to read MINST datasets so stay tuned.
-
-
+I will soon update the model to read MNIST datasets so stay tuned.
 
 ---
 
